@@ -13,16 +13,17 @@ export const metadata = {
     template: '%s | RetireMinute'
   },
   description: 'Instantly estimate your CPP, OAS, and Pension for 2026. Know your retirement income in 60 seconds. Private & Secure.',
-  // icons 설정을 비워두거나 삭제하면 Next.js가 app/icon.png를 자동으로 사용합니다.
   manifest: '/manifest.json',
-  openGraph: {
-    title: 'Free Canadian Retirement Calculator (No Email Needed)',
-    description: 'Instantly estimate your CPP, OAS, and Pension for 2026. Know your retirement income in 60 seconds. Private & Secure.',
-    url: 'https://retireminute.ca',
-    siteName: 'RetireMinute',
-    images: [{ url: '/og-image.png', width: 1200, height: 630 }],
-    locale: 'en_CA',
-    type: 'website',
+  // [파비콘 좀비 퇴치 설정]
+  // ?v=100 처럼 아주 높은 버전을 붙여서 브라우저의 기존 기억을 완전히 무력화합니다.
+  icons: {
+    icon: [
+      { url: '/icon.png?v=100', type: 'image/png' },
+      { url: '/favicon.ico?v=100', sizes: 'any' }
+    ],
+    apple: [
+      { url: '/icon.png?v=100', sizes: '180x180', type: 'image/png' }
+    ],
   },
 }
 
@@ -31,6 +32,10 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+        
+        {/* 브라우저가 헷갈리지 않게 head 안에서도 한 번 더 강제로 찍어줍니다. */}
+        <link rel="icon" href="/icon.png?v=100" />
+        
         <script src="https://cdn.tailwindcss.com"></script>
         
         <Script

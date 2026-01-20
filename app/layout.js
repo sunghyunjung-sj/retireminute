@@ -1,105 +1,69 @@
-/**
- * [수정됨] 아이콘 경로를 명시적으로 지정한 버전입니다.
- * public/icon.png 파일이 존재해야 합니다.
- */
+import './globals.css'
+import { Inter } from 'next/font/google'
+import Script from 'next/script'
+
+const inter = Inter({ subsets: ['latin'] })
+
+// Google Analytics 측정 ID
+const GA_MEASUREMENT_ID = 'G-1P3MY301RZ';
 
 export const metadata = {
-  metadataBase: new URL('https://retire-minute-ca.vercel.app'), 
+  metadataBase: new URL('https://retireminute.ca'),
   title: {
-    default: "RetireMinute Canada | 60-Second Retirement Calculator",
-    template: "%s | RetireMinute Canada",
+    default: 'RetireMinute | 2026 Canada Retirement Calculator (CPP/OAS)',
+    template: '%s | RetireMinute'
   },
-  description: "Estimate your monthly retirement income in Canada. Calculate CPP/QPP, OAS, and workplace pensions in just 60 seconds with inflation-adjusted results. Free retirement planning calculator for Canadians.",
-  keywords: [
-    "Canada Retirement Calculator",
-    "CPP Calculator",
-    "OAS Calculator", 
-    "QPP Calculator",
-    "Pension Estimate Canada",
-    "RetireMinute",
-    "Financial Planning Canada",
-    "Canadian Retirement Income",
-    "Retirement Planning Tool"
-  ],
-  authors: [{ name: "RetireMinute Canada" }],
-  
-  // [중요] 아이콘 경로 강제 지정
-  // public 폴더 안에 icon.png 파일이 있어야 합니다.
-  icons: {
-    icon: '/icon.png',
-    shortcut: '/icon.png',
-    apple: '/icon.png',
-  },
-
-  manifest: '/manifest.json',
-
+  description: 'Instantly estimate your CPP, OAS, and Pension for 2026. Know your retirement income in 60 seconds. Private & Secure.',
+  keywords: ['Canada retirement calculator', 'CPP calculator', 'OAS estimator', 'RetireMinute', 'Financial planning Canada'],
+  authors: [{ name: 'RetireMinute' }],
+  // [중요] icons 설정을 완전히 삭제했습니다. 
+  // 이제 Next.js가 app/icon.png 파일을 자동으로 찾아서 파비콘으로 만듭니다.
   openGraph: {
-    title: "RetireMinute Canada - Smart Retirement Planning",
-    description: "Complex Canadian pension calculations made simple. Get your retirement estimate in 60 seconds with inflation-adjusted results.",
-    url: "/",
-    siteName: "RetireMinute Canada",
-    locale: "en_CA",
-    type: "website",
-    images: [
-      {
-        url: '/icon.png', // 소셜 미디어 공유 시에도 이 아이콘 사용
-        width: 512,
-        height: 512,
-      },
-    ],
+    title: 'Free Canadian Retirement Calculator (No Email Needed)',
+    description: 'Instantly estimate your CPP, OAS, and Pension for 2026. Know your retirement income in 60 seconds. Private & Secure.',
+    url: 'https://retireminute.ca',
+    siteName: 'RetireMinute',
+    images: [{ url: '/og-image.png', width: 1200, height: 630 }],
+    locale: 'en_CA',
+    type: 'website',
   },
   twitter: {
-    card: "summary_large_image",
-    title: "RetireMinute Canada | 60-Second Retirement Calculator",
-    description: "Planning for retirement in Canada? Get a quick estimate of your future monthly income now.",
-    images: ['/icon.png'],
+    card: 'summary_large_image',
+    title: 'Free Canadian Retirement Calculator (No Email Needed)',
+    description: 'Instantly estimate your CPP, OAS, and Pension for 2026. Know your retirement income in 60 seconds. Private & Secure.',
+    images: ['/og-image.png'],
   },
-  robots: {
-    index: true,
-    follow: true,
-  },
-  category: "Finance",
-};
-
-export const viewport = {
-  themeColor: '#020617',
-  width: 'device-width',
-  initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-};
+}
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <head>
+        {/* head 태그 안에 있던 수동 link icon 태그들도 모두 삭제했습니다. */}
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+        
+        {/* Tailwind CSS */}
         <script src="https://cdn.tailwindcss.com"></script>
-        {/* 모바일 앱 설정 */}
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        
+        {/* Google Analytics (gtag.js) */}
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${GA_MEASUREMENT_ID}', {
+              page_path: window.location.pathname,
+            });
+          `}
+        </Script>
       </head>
-      <body 
-        className="flex flex-col min-h-screen bg-slate-950 text-slate-100 antialiased" 
-        suppressHydrationWarning
-      >
-        <main className="flex-grow flex flex-col">
-          {children}
-        </main>
-
-        <footer className="py-10 px-6 border-t border-slate-900 bg-slate-950 w-full">
-          <div className="max-w-md mx-auto text-[10px] text-slate-600 leading-relaxed text-center space-y-3">
-            <p>
-              <strong>LEGAL DISCLAIMER:</strong> RetireMinute Canada is an independent tool provided for informational and educational purposes only. It is not intended to provide, and should not be relied upon for, financial, investment, legal, or tax advice. 
-            </p>
-            <p>
-              Calculations are estimates based on current Canadian pension legislation (CPP/QPP, OAS) and user-provided inputs. Actual benefits may vary. Consult with a certified professional before making any financial decisions.
-            </p>
-            <p className="pt-2 text-slate-700 font-medium">
-              © {new Date().getFullYear()} RetireMinute Canada. All rights reserved.
-            </p>
-          </div>
-        </footer>
+      <body className={`${inter.className} bg-slate-950 text-slate-100 antialiased`}>
+        {children}
       </body>
     </html>
-  );
+  )
 }

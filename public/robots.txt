@@ -1,4 +1,3 @@
 User-agent: *
 Allow: /
-
-Sitemap: https://retireminute.ca/sitemap.xml
+Sitemap: [https://retireminute.ca/sitemap.xml](https://retireminute.ca/sitemap.xml)

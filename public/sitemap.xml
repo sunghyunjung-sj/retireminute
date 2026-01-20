@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://retireminute.ca/</loc>
-    <lastmod>2026-01-16</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>1.0</priority>
-  </url>
+<urlset xmlns="[http://www.sitemaps.org/schemas/sitemap/0.9](http://www.sitemaps.org/schemas/sitemap/0.9)">
+  <url><loc>[https://retireminute.ca/](https://retireminute.ca/)</loc></url>
+  <url><loc>[https://retireminute.ca/blog/cpp-guide](https://retireminute.ca/blog/cpp-guide)</loc></url>
+  <url><loc>[https://retireminute.ca/blog/oas-clawback](https://retireminute.ca/blog/oas-clawback)</loc></url>
+  <url><loc>[https://retireminute.ca/blog/rrsp-vs-tfsa](https://retireminute.ca/blog/rrsp-vs-tfsa)</loc></url>
+  <url><loc>[https://retireminute.ca/blog/retirement-cost](https://retireminute.ca/blog/retirement-cost)</loc></url>
 </urlset>

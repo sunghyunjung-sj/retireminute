@@ -13,16 +13,8 @@ export const metadata = {
     template: '%s | RetireMinute'
   },
   description: 'Instantly estimate your CPP, OAS, and Pension for 2026. Know your retirement income in 60 seconds. Private & Secure.',
-  
-  // [핵심] 여기에 매니페스트 파일을 연결합니다.
+  // icons 설정을 비워두거나 삭제하면 Next.js가 app/icon.png를 자동으로 사용합니다.
   manifest: '/manifest.json',
-
-  // 아이콘 설정도 app-logo.png로 통일합니다.
-  icons: {
-    icon: '/app-logo.png',
-    shortcut: '/app-logo.png',
-    apple: '/app-logo.png',
-  },
   openGraph: {
     title: 'Free Canadian Retirement Calculator (No Email Needed)',
     description: 'Instantly estimate your CPP, OAS, and Pension for 2026. Know your retirement income in 60 seconds. Private & Secure.',

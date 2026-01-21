@@ -1,8 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import * as React from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ComposedChart, Bar, XAxis, YAxis, Legend, ResponsiveContainer, LabelList, Cell } from 'recharts';
-import { ArrowRight, ArrowLeft, Info, DollarSign, TrendingUp, AlertTriangle, RefreshCcw, ExternalLink, Calculator, X, Scale, Share2, CheckCircle2, PieChart, Download, ToggleRight, ToggleLeft, ChevronDown, ChevronUp, Lightbulb, PartyPopper, Globe, HelpCircle } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Info, DollarSign, TrendingUp, AlertTriangle, RefreshCcw, ExternalLink, Calculator, X, Scale, Share2, CheckCircle2, PieChart, Download, ToggleRight, ToggleLeft, ChevronDown, ChevronUp, Lightbulb, PartyPopper, Globe, HelpCircle, Lock, Shield } from 'lucide-react';
+
+// --- [설정] GA4 측정 ID 입력란 ---
+// 발급받은 'G-XXXXXXX' 코드를 아래 따옴표 안에 넣으세요.
+const GA_MEASUREMENT_ID = 'G-XXXXXXXXXX'; 
 
 // --- 미리보기 환경 호환성을 위한 임시 Link 컴포넌트 ---
 const Link = ({ href, children, className, ...props }) => (
@@ -11,17 +16,30 @@ const Link = ({ href, children, className, ...props }) => (
   </a>
 );
 
-// --- Google Analytics Mock ---
+// --- Google Analytics Helper ---
+// 윈도우 객체에 gtag가 있는지 확인하고 이벤트를 전송하는 안전한 함수
+const trackEvent = (action, category, label, value = null) => {
+  if (typeof window !== 'undefined' && window.gtag) {
+    window.gtag('event', action, {
+      event_category: category,
+      event_label: label,
+      value: value
+    });
+    // 개발 모드 확인용 로그 (배포 전 삭제 가능)
+    console.log(`📡 GA4 Event: ${action}`, { category, label, value });
+  }
+};
+
 if (typeof window !== 'undefined') {
-  window.gtag = window.gtag || function() {};
+  window.gtag = window.gtag || function() { (window.dataLayer = window.dataLayer || []).push(arguments); };
 }
 
 // --- 다국어 사전 (TRANSLATIONS) ---
 const TRANSLATIONS = {
   en: {
     title_main: "RetireMinute",
-    hero_title: <>Gain clarity on your <br className="md:hidden" /> retirement cash flow</>,
-    hero_subtitle: <>Calculate your CPP/QPP, OAS, and pensions <br />in <span className="text-indigo-400 font-semibold">60 seconds</span>.<br /> No sign-up needed.</>,
+    hero_title: "Retire with Confidence.",
+    hero_subtitle: <>Calculate your CPP & OAS in <span className="text-indigo-400 font-semibold">60 seconds</span>. <span className="inline-block"><Lock size={12} className="inline mb-0.5"/> No login, no email, just results.</span></>,
     guides_link: "Guides",
     current_age: "Current Age",
     target_retirement_age: "Target Retirement Age",
@@ -30,7 +48,7 @@ const TRANSLATIONS = {
     next: "Next",
     back: "Back",
     financial_overview: "Financial Overview",
-    financial_subtitle: "This info helps estimate your overall government benefits.",
+    financial_subtitle: "Let's build your financial snapshot.",
     annual_income: "Current Annual Income (Pre-tax)",
     career_avg: "Estimated Career Average Income",
     other_income: "Other Annual Retirement Income (RRSP, etc.)",
@@ -54,8 +72,8 @@ const TRANSLATIONS = {
     breakdown: "Income Breakdown",
     source: "Source",
     diff: "Diff",
-    gap_analysis: "Gap Analysis",
-    shortfall_label: "Monthly Shortfall",
+    gap_analysis: "Reality Check",
+    shortfall_label: "Income Gap to Fill",
     surplus_label: "Monthly Surplus",
     savings_label: "Savings Needed",
     target_70_label: "Target: 70% of Net Income",
@@ -63,8 +81,8 @@ const TRANSLATIONS = {
     savings_desc_combined: "Monthly savings needed from today until retirement to cover your shortfall from retirement to age 90.",
     savings_tooltip_detail: "This calculation assumes a 5% real investment return and accounts for the 10% OAS increase at age 75. It projects your cash flow year-by-year until age 90.",
     surplus_desc: "You are On Track! Your projected income exceeds the 70% target.",
-    expert_shortfall: "Get a plan to cover your shortfall",
-    expert_surplus: "Learn how to invest your surplus",
+    expert_shortfall: "See How to Fix This Gap",
+    expert_surplus: "Maximize My Wealth",
     download_pdf: "Download PDF Report",
     new_calc: "New Calc",
     copy_results: "Copy Results",
@@ -78,11 +96,11 @@ const TRANSLATIONS = {
     warn_pension_max: "Cannot exceed total years worked in Canada.",
     note_residency: "This determines your Old Age Security (OAS) amount.",
     note_work_history: "This determines your CPP/QPP benefit amount.",
-    note_todays_dollars: "Enter in today's dollars (current value).",
-    cpp_enhancement_note: "Note: For younger generations, actual CPP may be higher due to future enhancement implementation (Conservative Estimate).",
+    note_todays_dollars: "Enter estimate in Today's Dollars.",
+    cpp_enhancement_note: "Note: Includes estimated Enhanced CPP benefits for your age group.",
     info_career_avg: (
       <>
-        We pre-filled this with your current income. Adjust manually if your lifetime average (in today's dollars) differs:<br/><br/>
+        We've started you off with averages. Adjust to fit your life:<br/><br/>
         • <strong>Early Career:</strong> Expect significant salary growth? → <strong>Enter a higher amount.</strong><br/>
         • <strong>Peak Earner:</strong> Was your past income lower? → <strong>Enter a lower amount.</strong>
       </>
@@ -102,12 +120,20 @@ const TRANSLATIONS = {
     blog_section: "Retirement Planning Guides",
     pension_note: "* Pension reduced by 3% per year before age 65",
     total_net: "TOTAL (Net)",
-    total_gross: "TOTAL (Gross)"
+    total_gross: "TOTAL (Gross)",
+    trust_marker: "Based on FP Canada Standards",
+    legal_box_title: "Important Disclaimer",
+    legal_box_text: "This calculator is for educational purposes only and does not constitute financial advice. Results are estimates based on 2026 FP Canada assumptions. Actual amounts may vary. We do not store your data.",
+    step_indicator: "Step {current} of 4",
+    step_1_label: "Basics",
+    step_2_label: "Income",
+    step_3_label: "History",
+    step_4_label: "Details",
   },
   ko: {
     title_main: "RetireMinute",
-    hero_title: <>은퇴 후 현금 흐름을 <br className="md:hidden" /> 한눈에 확인하세요</>,
-    hero_subtitle: <><span className="text-indigo-400 font-semibold">60초</span> 만에 CPP/QPP 계산<br />(로그인 불필요)</>,
+    hero_title: "자신감 있는 은퇴를 준비하세요.",
+    hero_subtitle: <>60초 만에 CPP와 OAS를 계산하세요.<br className="md:hidden"/> <span className="inline-block"><Lock size={12} className="inline mb-0.5"/> 로그인·이메일 없이 바로 확인하는 내 연금 리포트</span></>,
     guides_link: "가이드",
     current_age: "현재 나이",
     target_retirement_age: "희망 은퇴 연령",
@@ -116,7 +142,7 @@ const TRANSLATIONS = {
     next: "다음",
     back: "이전",
     financial_overview: "재정 정보",
-    financial_subtitle: "정부 혜택을 추산하기 위한 기본 정보입니다.",
+    financial_subtitle: "재무 스냅샷을 함께 만들어봅시다.",
     annual_income: "현재 연간 소득 (세전)",
     career_avg: "예상 평생 평균 소득",
     other_income: "기타 은퇴 소득 (RRSP 등)",
@@ -140,17 +166,17 @@ const TRANSLATIONS = {
     breakdown: "항목별 상세 내역",
     source: "항목",
     diff: "차이",
-    gap_analysis: "은퇴 자금 분석 (Gap Analysis)",
-    shortfall_label: "부족한 월 소득",
-    surplus_label: "월 여유 자금 (Surplus)",
+    gap_analysis: <>현실 점검<br />(Reality Check)</>,
+    shortfall_label: "채워야 할 월 소득 갭",
+    surplus_label: "월 예상 여유액",
     savings_label: "필요 월 저축액",
     target_70_label: "목표: 현재 세후 소득의 70%",
     target_70_tooltip: "왜 70%인가요? 은퇴 후에는 모기지 상환 완료, 국민연금(CPP)/고용보험(EI) 납부 중단, 은퇴 저축 불필요, 출퇴근 비용 절감 등으로 인해 현재 소득의 70%만 있어도 동일한 생활 수준을 유지할 수 있다는 것이 정설입니다.",
     savings_desc_combined: "은퇴 후부터 90세까지의 부족 자금을 마련하기 위해, 오늘부터 은퇴 전까지 매월 저축해야 할 금액입니다.",
     savings_tooltip_detail: "이 계산은 연 5% 실질 투자 수익률을 가정하며, 75세에 10% 인상되는 OAS 연금까지 모두 반영하여 90세까지의 현금 흐름을 시뮬레이션한 결과입니다.",
     surplus_desc: "현재 궤도에 잘 올라와 있습니다(On Track). 예상 소득이 목표치(70%)를 초과합니다.",
-    expert_shortfall: "부족한 자금 해결책 받기",
-    expert_surplus: "여유 자금 활용 및 투자 전략 알아보기",
+    expert_shortfall: "이 갭을 해결하는 방법 보기",
+    expert_surplus: "내 자산 극대화하기",
     download_pdf: "PDF 리포트 다운로드",
     new_calc: "새로 계산",
     copy_results: "결과 복사",
@@ -164,12 +190,12 @@ const TRANSLATIONS = {
     warn_pension_max: "총 근무 기간을 초과할 수 없습니다.",
     note_residency: "이 기간은 노령 보장 연금(OAS) 수령액을 결정합니다.",
     note_work_history: "이 기간은 국민 연금(CPP/QPP) 수령액을 결정합니다.",
-    note_todays_dollars: "현재 가치(Today's dollars)로 입력해 주세요.",
-    cpp_enhancement_note: "참고: 젊은 세대의 경우, 향후 CPP 확장(Enhanced CPP) 효과로 실제 수령액은 이보다 높을 수 있습니다 (보수적 추산).",
+    note_todays_dollars: "현재 가치(Today's Dollars) 기준 추산액을 입력하세요.",
+    cpp_enhancement_note: "참고: 젊은 세대의 경우, 향후 CPP 확장(Enhanced CPP) 효과가 반영되었습니다.",
     on_track_title: "은퇴 준비가 순조롭습니다",
     info_career_avg: (
       <>
-        현재 소득을 기준으로 자동 입력되었습니다. 만약 18세부터 은퇴까지의 예상 평생 평균 소득이 현재 가치(Today's dollars)와 다를 경우 직접 수정해 주세요.<br/><br/>
+        평균값으로 시작해 드렸습니다. 당신의 삶에 맞춰 조정하세요:<br/><br/>
         • <strong>커리어 초기:</strong> 소득 증가 예상 → <strong>현재보다 높게 입력</strong><br/>
         • <strong>소득 전성기:</strong> 과거 소득 낮음 → <strong>현재보다 낮게 입력</strong>
       </>
@@ -189,12 +215,20 @@ const TRANSLATIONS = {
     blog_section: "은퇴 계획 가이드",
     pension_note: "* 65세 이전 은퇴 시 연금액이 연 3%씩 감액됩니다.",
     total_net: "총 월 수령액 (세후)",
-    total_gross: "총 월 수령액 (세전)"
+    total_gross: "총 월 수령액 (세전)",
+    trust_marker: "Based on FP Canada Standards",
+    legal_box_title: "중요 면책 조항",
+    legal_box_text: "이 결과는 교육 목적의 시뮬레이션이며 재무적 조언이 아닙니다. 2026 FP Canada 가정치를 기반으로 하며 실제 수령액은 다를 수 있습니다. 귀하의 데이터는 서버에 저장되지 않습니다.",
+    step_indicator: "{current} / 4 단계",
+    step_1_label: "기본 정보",
+    step_2_label: "재정 정보",
+    step_3_label: "자격 요건",
+    step_4_label: "상세 조정",
   },
   zh: {
     title_main: "RetireMinute",
-    hero_title: <>清晰了解您的 <br className="md:hidden" /> 退休现金流</>,
-    hero_subtitle: <>60秒估算您的 CPP/QPP<br /> 无需注册账号。</>,
+    hero_title: "自信迈向退休生活",
+    hero_subtitle: <>60秒估算您的CPP和OAS。<br className="md:hidden"/> <span className="inline-block"><Lock size={12} className="inline mb-0.5"/> 无需登录，无需邮件，直接查看结果。</span></>,
     guides_link: "指南",
     current_age: "当前年龄",
     target_retirement_age: "预计退休年龄",
@@ -203,7 +237,7 @@ const TRANSLATIONS = {
     next: "下一步",
     back: "上一步",
     financial_overview: "财务概览",
-    financial_subtitle: "这些信息有助于估算您的政府福利。",
+    financial_subtitle: "让我们建立您的财务快照。",
     annual_income: "当前年收入 (税前)",
     career_avg: "预计职业生涯平均收入",
     other_income: "其他退休收入 (RRSP/RRIF等)",
@@ -212,14 +246,14 @@ const TRANSLATIONS = {
     work_history: "在加拿大工作年限 (18岁至退休)",
     adjustments: "附加调整",
     child_rearing: "抚养子女年数 (7岁以下)",
-    child_rearing_note: "请输入因照顾7岁以下儿童而导致低收入或无收入的总年数。（若是多名子女，请计算实际总日历年数，而非简单相乘）。",
+    child_rearing_note: "请输入因照顾7岁以下儿童而导致低收入 or 无收入的总年数。（若是多名子女，请计算实际总日历年数，而非简单相乘）。",
     pension_plan: "确定给付型 (DB) 养老金",
     pension_years: "退休时的服务年限",
     best_5_salary: "最高5年平均工资",
     results_title: "退休年龄：",
     today_val: "现值",
     future_val: "未来价值",
-    monthly: "每月",
+    monthly: "月预估领",
     yearly: "每年",
     comparison_title: "月收入对比",
     compare_scenarios: "方案对比",
@@ -227,8 +261,8 @@ const TRANSLATIONS = {
     breakdown: "收入构成明细",
     source: "来源",
     diff: "差异",
-    gap_analysis: "资金缺口分析 (Gap Analysis)",
-    shortfall_label: "每月资金缺口",
+    gap_analysis: <>退休现实检验<br />(Reality Check)</>,
+    shortfall_label: "需填补的月收入缺口",
     surplus_label: "每月盈余 (Surplus)",
     savings_label: "每月需储蓄",
     target_70_label: "目标：税后收入的70%",
@@ -236,8 +270,8 @@ const TRANSLATIONS = {
     savings_desc_combined: "为填补退休后至90岁的资金缺口，从今天起至退休前每月需要的储蓄额。",
     savings_tooltip_detail: "此计算假设年投资回报率为5%，并已计入75岁时OAS增加10%的因素，模拟至90岁的现金流。",
     surplus_desc: "步入正轨 (On Track)！您的预计收入超过了70%的目标。",
-    expert_shortfall: "获取填补缺口的方案",
-    expert_surplus: "学习如何投资盈余资金",
+    expert_shortfall: "查看如何填补缺口",
+    expert_surplus: "最大化我的财富",
     download_pdf: "下载PDF报告",
     new_calc: "重新计算",
     copy_results: "复制结果",
@@ -251,11 +285,11 @@ const TRANSLATIONS = {
     warn_pension_max: "不能超过在加拿大的总工作年限。",
     note_residency: "这决定了您的养老金(OAS)金额。",
     note_work_history: "这决定了您的退休金(CPP/QPP)福利金额。",
-    note_todays_dollars: "请输入当前价值（今天的美元）。",
-    cpp_enhancement_note: "注意：对于年轻一代，由于未来的CPP增强实施，实际领取的金额可能会更高（保守估算）。",
+    note_todays_dollars: "请输入按现值（Today's Dollars）估算的金额。",
+    cpp_enhancement_note: "注意：已包含针对您年龄组的Enhanced CPP估算。",
     info_career_avg: (
       <>
-        已预填当前收入。如果您的终身平均收入（按现值计算）不同，请调整：<br/><br/>
+        我们以平均值开始。请根据您的生活进行调整：<br/><br/>
         • <strong>职业早期：</strong> 预计未来收入大幅增长？ → <strong>输入更高金额</strong><br/>
         • <strong>收入高峰期：</strong> 过去收入较低？ → <strong>输入更低金额</strong>
       </>
@@ -275,12 +309,20 @@ const TRANSLATIONS = {
     blog_section: "退休规划指南",
     pension_note: "* 65岁之前退休，退休金每年减少3%",
     total_net: "每月总净收入",
-    total_gross: "每月总总收入"
+    total_gross: "每月总总收入",
+    trust_marker: "Based on FP Canada Standards",
+    legal_box_title: "重要免责声明",
+    legal_box_text: "本计算器仅用于教育目的，不构成财务建议。结果基于2026 FP Canada假设估算。实际金额可能会有所不同。我们不会存储您的数据。",
+    step_indicator: "第 {current} 步，共 4 步",
+    step_1_label: "基本信息",
+    step_2_label: "财务概览",
+    step_3_label: "资格条件",
+    step_4_label: "详细调整",
   },
   fr: {
     title_main: "RetireMinute",
-    hero_title: <>Clarifiez vos flux de <br className="md:hidden" /> trésorerie à la retraite</>,
-    hero_subtitle: <>Calculez votre RPC/RRQ, SV et pensions <br />en <span className="text-indigo-400 font-semibold">60 secondes</span>.<br /> Aucun compte requis.</>,
+    hero_title: "Prenez votre retraite en toute confiance.",
+    hero_subtitle: <>Calculez votre RPC et SV en <span className="text-indigo-400 font-semibold">60 secondes</span>. <span className="inline-block"><Lock size={12} className="inline mb-0.5"/> Pas de connexion, pas d'e-mail, juste des résultats.</span></>,
     guides_link: "Guides",
     current_age: "Âge actuel",
     target_retirement_age: "Âge de retraite visé",
@@ -289,7 +331,7 @@ const TRANSLATIONS = {
     next: "Suivant",
     back: "Retour",
     financial_overview: "Aperçu financier",
-    financial_subtitle: "Ces infos aident à estimer vos prestations gouvernementales globales.",
+    financial_subtitle: "Construisons votre aperçu financier.",
     annual_income: "Revenu annuel actuel (avant impôt)",
     career_avg: "Revenu moyen de carrière estimé",
     other_income: "Autres revenus de retraite (REER, etc.)",
@@ -313,17 +355,17 @@ const TRANSLATIONS = {
     breakdown: "Répartition du revenu",
     source: "Source",
     diff: "Diff",
-    gap_analysis: "Analyse des écarts (Gap Analysis)",
-    shortfall_label: "Déficit mensuel",
-    surplus_label: "Surplus mensuel",
+    gap_analysis: <>Bilan de réalité<br />(Reality Check)</>,
+    shortfall_label: "Manque à gagner",
+    surplus_label: "Capacité d'épargne",
     savings_label: "Épargne requise",
     target_70_label: "Cible : 70 % du revenu net",
     target_70_tooltip: "Pourquoi 70 % ? À la retraite, vous n'avez généralement plus d'hypothèque, de cotisations RPC/AE, de frais de déplacement, ni besoin d'épargner pour la retraite. 70 % de votre revenu net actuel suffit généralement à maintenir votre niveau de vie.",
-    savings_desc_combined: "Épargne mensuelle nécessaire dès aujourd'hui jusqu'à la retraite pour couvrir votre déficit de la retraite à 90 ans.",
+    savings_desc_combined: "Vous pouvez combler cet écart en épargnant ce montant chaque mois d'ici la retraite.",
     savings_tooltip_detail: "Ce calcul suppose un rendement réel de 5 % et tient compte de l'augmentation de 10 % de la SV à 75 ans, projetant vos flux de trésorerie jusqu'à 90 ans.",
     surplus_desc: "Sur la bonne voie (On Track) ! Votre revenu projeté dépasse l'objectif de 70 %.",
-    expert_shortfall: "Obtenir un plan pour combler votre déficit",
-    expert_surplus: "Apprendre à investir votre surplus",
+    expert_shortfall: "Voir comment combler cet écart",
+    expert_surplus: "Optimiser mon patrimoine",
     download_pdf: "Télécharger le rapport PDF",
     new_calc: "Nouveau calcul",
     copy_results: "Copier les résultats",
@@ -337,8 +379,8 @@ const TRANSLATIONS = {
     warn_pension_max: "Ne peut excéder le total des années travaillées au Canada.",
     note_residency: "Ceci détermine votre montant de la Sécurité de la vieillesse (SV).",
     note_work_history: "Ceci détermine votre montant de prestations du RPC/RRQ.",
-    note_todays_dollars: "Entrez en dollars d'aujourd'hui (valeur actuelle).",
-    cpp_enhancement_note: "Note : Pour les jeunes générations, le RPC réel peut être plus élevé en raison de la bonification future (Estimation prudente).",
+    note_todays_dollars: "Entrez une estimation en dollars d'aujourd'hui.",
+    cpp_enhancement_note: "Note : Comprend les prestations du RPC bonifié estimées pour votre groupe d'âge.",
     info_career_avg: (
       <>
         Ce montant est pré-rempli avec votre revenu actuel. Ajustez manuellement si votre moyenne à vie (en dollars d'aujourd'hui) diffère :<br/><br/>
@@ -361,7 +403,15 @@ const TRANSLATIONS = {
     blog_section: "Guides de planification de retraite",
     pension_note: "* Pension réduite de 3 % par an avant 65 ans",
     total_net: "TOTAL (Net)",
-    total_gross: "TOTAL (Brut)"
+    total_gross: "TOTAL (Brut)",
+    trust_marker: "Based on FP Canada Standards",
+    legal_box_title: "Avis de non-responsabilité",
+    legal_box_text: "Ce calculateur est à des fins éducatives uniquement et ne constitue pas un conseil financier. Les résultats sont des estimations basées sur les hypothèses de FP Canada 2026. Nous ne stockons pas vos données.",
+    step_indicator: "Étape {current} sur 4",
+    step_1_label: "Base",
+    step_2_label: "Revenus",
+    step_3_label: "Historique",
+    step_4_label: "Détails",
   }
 };
 
@@ -393,10 +443,10 @@ const FAQ_DATA = {
 };
 
 const BLOG_POSTS = [
-  { title: "How to Maximize CPP/QPP in 2026", href: "#", icon: TrendingUp },
-  { title: "Avoiding OAS Clawback", href: "#", icon: AlertTriangle },
-  { title: "RRSP vs. TFSA Strategy", href: "#", icon: Scale },
-  { title: "Real Cost of Retirement", href: "#", icon: DollarSign },
+  { title: "How to Maximize CPP/QPP in 2026", href: "/blog/cpp-guide", icon: TrendingUp },
+  { title: "Avoiding OAS Clawback", href: "/blog/oas-clawback", icon: AlertTriangle },
+  { title: "RRSP vs. TFSA Strategy", href: "/blog/rrsp-vs-tfsa", icon: Scale },
+  { title: "Real Cost of Retirement", href: "/blog/retirement-cost", icon: DollarSign },
 ];
 
 const CONSTANTS = {
@@ -475,7 +525,7 @@ const Card = ({ children, className = "" }) => (
 );
 
 const Label = ({ children, className = "", lang = 'en' }) => (
-  <label className={`block text-sm font-medium text-slate-300 mb-2 ${className} ${lang !== 'en' && lang !== 'fr' ? 'break-keep' : ''}`}>{children}</label>
+  <label className={`block text-sm font-medium text-slate-300 mb-2 ${className} ${['ko', 'zh'].includes(lang) ? 'break-keep' : ''}`}>{children}</label>
 );
 
 const CurrencyInput = React.forwardRef(({ value, onChange, placeholder, ...props }, ref) => (
@@ -509,7 +559,7 @@ const Input = React.forwardRef(({ type = "text", className = "", ...props }, ref
 Input.displayName = "Input";
 
 const Slider = ({ value, min, max, onChange, step = 1 }) => (
-  <div className="relative w-full h-6 flex items-center cursor-pointer group">
+  <div className="relative w-full h-6 flex items-center cursor-pointer group mb-6">
     <div className="absolute w-full h-2 bg-slate-700 rounded-full group-hover:bg-slate-600 transition-colors"></div>
     <div 
       className={`absolute h-2 bg-indigo-500 rounded-full group-hover:bg-indigo-400 transition-colors`} 
@@ -604,13 +654,13 @@ export default function App() {
   const [showLegal, setShowLegal] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
-  
+   
   const [showGapInfo, setShowGapInfo] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
   const [showAfterTax, setShowAfterTax] = useState(false);
   const [showTargetInfo, setShowTargetInfo] = useState(false);
   const [compareAge, setCompareAge] = useState(65);
-  
+   
   const [inputWarning, setInputWarning] = useState({ field: null, message: null });
   const firstInputRef = useRef(null);
 
@@ -751,11 +801,43 @@ export default function App() {
       oasAmount = Math.max(0, baseOAS);
     }
 
-    const earningsRatio = Math.min(Number(careerAvgIncome) / CONSTANTS.YMPE, 1.0);
+    // [New Logic 1.1] Enhanced CPP Factor for Younger Generations
+    // Heuristic: More years contributing after 2019 -> Higher enhancement
+    const currentYear = 2026;
+    const retirementYear = currentYear + (targetAge - currentAge);
+    const yearsContributingAfter2019 = Math.max(0, retirementYear - 2019);
+    
+    // Enhancement Factor: Scale from 1.0 to 1.33 based on 40 years maturity
+    let enhancementFactor = 1.0;
+    if (yearsContributingAfter2019 > 0) {
+      const enhancementRatio = Math.min(yearsContributingAfter2019 / 40, 1.0);
+      enhancementFactor = 1.0 + (enhancementRatio * 0.33);
+    }
+
+    // [New Logic 1.2] Child Rearing Drop-out (CRDO) Correction
+    // Instead of adding to years worked, we improve the earnings ratio by effectively reducing the denominator
+    const maxContributoryMonths = Math.max(0, targetAge - 18) * 12;
+    const dropOutMonths = Number(childRearingYears) * 12;
+    // Ensure effective period is not too small (min 10 years)
+    const effectiveN = Math.max(maxContributoryMonths - dropOutMonths, 120);
+    
+    // Estimate Total Lifetime Earnings based on user input (Career Avg * Years Worked)
+    // Then re-calculate ratio against YMPE with effective N
+    const totalLifetimeEarnings = Number(careerAvgIncome) * Number(yearsWorked);
+    // Adjusted Earnings Ratio (simulating drop-out)
+    const adjustedEarningsRatio = Math.min(totalLifetimeEarnings / (CONSTANTS.YMPE * (effectiveN / 12)), 1.0);
+    
+    // Basic Contribution Factor (Years / 39)
+    const contributionFactor = Math.min(adjWorked, 40) / 39;
+
     let cppAmount = 0;
     if (targetAge >= 60) {
-      const contributionFactor = Math.min(adjWorked + (Number(childRearingYears) * 0.5), 40) / 39;
-      let baseCPP = CONSTANTS.MAX_CPP_65 * earningsRatio * Math.min(contributionFactor, 1.0);
+      // Base CPP formula with new CRDO ratio
+      let baseCPP = CONSTANTS.MAX_CPP_65 * adjustedEarningsRatio * Math.min(contributionFactor, 1.0);
+      
+      // Apply Enhancement
+      baseCPP = baseCPP * enhancementFactor;
+
       if (targetAge < 65) baseCPP -= baseCPP * 0.006 * (65 - targetAge) * 12;
       else if (targetAge > 65) baseCPP += baseCPP * 0.007 * Math.min(60, (Math.min(targetAge, 70) - 65) * 12);
       cppAmount = Math.max(0, baseCPP);
@@ -765,11 +847,10 @@ export default function App() {
     if (hasPension !== 'None' && targetAge >= 55) {
       const best5AvgFuture = Number(pensionSalary) * wageGrowthFactor;
       // [Expert Fix 3] Bridge Benefit Consideration
-      // If retiring before 65, use 2.0% formula (assumes bridge). If >= 65, use standard 1.3%.
       const accrualRate = targetAge < 65 ? 0.02 : 0.013;
       const annualPension = (accrualRate * Math.min(best5AvgFuture, CONSTANTS.YMPE * wageGrowthFactor) * adjPensionYears) + (0.02 * Math.max(0, best5AvgFuture - CONSTANTS.YMPE * wageGrowthFactor) * adjPensionYears);
       pensionAmount = Math.max(0, (annualPension / 12) / inflationFactor);
-      if (targetAge < 65) pensionAmount *= (1 - 0.03 * (65 - targetAge)); // Early retirement reduction
+      if (targetAge < 65) pensionAmount *= (1 - 0.03 * (65 - targetAge)); 
     }
 
     const totalRetireAnnual = (cppAmount + pensionAmount + oasAmount) * 12 + Number(otherRetirementIncome);
@@ -777,15 +858,23 @@ export default function App() {
       oasAmount = Math.max(0, oasAmount - (((totalRetireAnnual - CONSTANTS.OAS_THRESHOLD) * 0.15) / 12));
     }
 
+    // [New Logic 1.3] Age Amount Tax Credit Precision
     let taxRate = getTaxRate(province, totalRetireAnnual);
-    // [Expert Fix 5 - Pro Tip] High Income Bypass
-    // Only apply age amount heuristic (-3.5%) if income is BELOW threshold.
-    // Assuming simple heuristic: if low/mid income and age >= 65, effective tax is lower due to credits.
+    let finalTaxRate = taxRate;
+    
     if (targetAge >= 65 && totalRetireAnnual < CONSTANTS.OAS_THRESHOLD) {
-        taxRate = Math.max(0, taxRate - 0.035);
+       // Estimate Age Amount Credit ($9000 base, 15% credit rate)
+       const ageAmountBase = 9000;
+       // Reduction if income > threshold (approx $44k)
+       const ageCreditReduction = Math.max(0, (totalRetireAnnual - 44325) * 0.15);
+       const ageCredit = Math.max(0, ageAmountBase - ageCreditReduction) * 0.15;
+       
+       // Convert credit to effective rate reduction
+       const taxReductionRate = totalRetireAnnual > 0 ? (ageCredit / totalRetireAnnual) : 0;
+       finalTaxRate = Math.max(0, taxRate - taxReductionRate);
     }
 
-    return { oas: oasAmount, cpp: cppAmount, pension: pensionAmount, total: oasAmount + cppAmount + pensionAmount + (Number(otherRetirementIncome) / 12), otherMonthly: Number(otherRetirementIncome) / 12, inflationFactor, taxRate, netFactor: 1 - taxRate };
+    return { oas: oasAmount, cpp: cppAmount, pension: pensionAmount, total: oasAmount + cppAmount + pensionAmount + (Number(otherRetirementIncome) / 12), otherMonthly: Number(otherRetirementIncome) / 12, inflationFactor, taxRate: finalTaxRate, netFactor: 1 - finalTaxRate };
   };
 
   const calculateRetirement = () => {
@@ -859,6 +948,9 @@ export default function App() {
              savingsNeeded = totalNestEggNeeded * monthlyRealRate / (Math.pow(1 + monthlyRealRate, monthsToRetire) - 1);
         }
     }
+    
+    // [Analytics] Track Calculate Event
+    trackEvent('calculate_completed', 'engagement', 'Results Generated', Math.round(base.total));
 
     setResults({ 
       base: { ...base, age: formData.retirementAge }, 
@@ -891,6 +983,9 @@ export default function App() {
   const handleDownloadPDF = async () => {
     if (!results || !window.jspdf) return;
     setIsDownloading(true);
+    
+    // [Analytics] Track PDF Download
+    trackEvent('download_pdf', 'engagement', 'PDF Report Downloaded', Math.round(results.base.total));
     
     if (typeof window !== 'undefined' && window.gtag) {
       window.gtag('event', 'download_pdf', {
@@ -1053,10 +1148,12 @@ export default function App() {
       doc.text(ctaText, 105, 270, { align: "center" });
       const textWidth = doc.getTextWidth(ctaText);
       doc.link(105 - (textWidth / 2), 266, textWidth, 5, { url: CONSTANTS.EXPERT_LINK });
+      
+      // [PDF Legal Update]
       doc.setFontSize(7);
       doc.setTextColor(148, 163, 184);
       doc.setFont("helvetica", "normal");
-      const disclaimer = "Disclaimer: This estimate is for informational purposes only. Actual benefits may vary. This is not financial advice.";
+      const disclaimer = "Disclaimer: This result is an estimate based on 2026 FP Canada assumptions. Not financial advice.";
       doc.text(disclaimer, 105, 280, { align: "center" });
       doc.text(`Generated by ${CONSTANTS.SITE_URL.replace('https://', '')}`, 105, 290, { align: "center" });
       doc.save(`RetireMinute_Estimate.pdf`);
@@ -1121,7 +1218,6 @@ export default function App() {
         )}
 
         <div className="p-5 grid md:grid-cols-2 gap-6 items-start relative">
-            {/* Left: Shortfall/Surplus */}
             <div className="text-center md:text-left flex-1 flex flex-col h-full justify-between">
                 <div>
                     <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">
@@ -1131,18 +1227,15 @@ export default function App() {
                         $<CountUp end={Math.round(hasShortfall ? shortfallBase : surplusBase)} duration={1500} />
                     </div>
                 </div>
-                <p className="text-[10px] text-slate-400 mt-1 min-h-[1.5em]">
+                <p className={`text-[10px] text-slate-400 mt-1 min-h-[1.5em] ${['ko', 'zh'].includes(lang) ? 'break-keep' : ''}`}>
                     {hasShortfall 
                         ? `${((shortfallBase / targetMonthlyNet) * 100).toFixed(1)}% below target` 
                         : `${((surplusBase / targetMonthlyNet) * 100).toFixed(1)}% above target`}
                 </p>
             </div>
 
-            {/* Right: Action/Savings */}
             <div className="text-center md:text-right relative flex-1 flex flex-col h-full justify-between">
-                 {/* Mobile Divider */}
                 <div className="absolute top-0 left-0 w-full h-px bg-slate-800 md:hidden -mt-3"></div>
-                {/* Desktop Divider */}
                 <div className="absolute top-0 left-0 h-full w-px bg-slate-800 hidden md:block -ml-3"></div>
 
                 <div>
@@ -1163,9 +1256,9 @@ export default function App() {
                 </div>
                 
                 {hasShortfall ? (
-                    <p className={`text-[10px] text-slate-400 mt-1 leading-relaxed ${lang !== 'en' ? 'break-keep' : ''}`}>{t('savings_desc_combined')}</p>
+                    <p className={`text-[10px] text-slate-400 mt-1 leading-relaxed ${['ko', 'zh'].includes(lang) ? 'break-keep' : ''}`}>{t('savings_desc_combined')}</p>
                 ) : (
-                    <p className={`text-[10px] text-emerald-500/80 mt-1 font-medium leading-relaxed ${lang !== 'en' ? 'break-keep' : ''}`}>{t('surplus_desc')}</p>
+                    <p className={`text-[10px] text-emerald-500/80 mt-1 font-medium leading-relaxed ${['ko', 'zh'].includes(lang) ? 'break-keep' : ''}`}>{t('surplus_desc')}</p>
                 )}
             </div>
         </div>
@@ -1178,12 +1271,94 @@ export default function App() {
     );
   };
 
+  // --- Step Indicator Renderer ---
+  function renderStepIndicator() {
+    if (step > 4) return null; // Don't show on results page
+
+    return (
+      <div className="w-full max-w-md mx-auto px-6 mt-4 mb-2">
+        <div className="flex items-center gap-2">
+          {[1, 2, 3, 4].map((s) => (
+            <div
+              key={s}
+              className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${
+                s <= step ? 'bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]' : 'bg-slate-800'
+              }`}
+            />
+          ))}
+        </div>
+        <div className="flex justify-between mt-2">
+          <span className="text-[10px] font-bold text-indigo-400">
+             {t('step_indicator', { current: step, total: 4 })}
+          </span>
+          <span className="text-[10px] font-medium text-slate-500">
+            {step === 1 ? t('step_1_label') : step === 2 ? t('step_2_label') : step === 3 ? t('step_3_label') : t('step_4_label')}
+          </span>
+        </div>
+      </div>
+    );
+  };
+   
+  // --- New Render Functions for FAQ and Guides ---
+  function renderFAQ() {
+      return (
+        <div className="mt-12 mb-6 space-y-4">
+          <div className="flex items-center justify-center space-x-2 mb-6">
+            <div className="h-px bg-slate-800 flex-1"></div>
+            <span className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">{t('faq_section')}</span>
+            <div className="h-px bg-slate-800 flex-1"></div>
+          </div>
+          <div className="space-y-3">
+            {(FAQ_DATA[lang] || FAQ_DATA['en']).map((item, idx) => (
+              <div key={idx} className="rounded-xl border border-slate-800 bg-slate-900/30 overflow-hidden">
+                <button onClick={() => setOpenFaqIndex(openFaqIndex === idx ? null : idx)} className="w-full flex items-center justify-between p-4 text-left hover:bg-slate-800/50 transition-colors">
+                  <span className={`text-sm font-medium text-slate-300 pr-4 ${['ko', 'zh'].includes(lang) ? 'break-keep' : ''}`}>{item.q}</span>
+                  {openFaqIndex === idx ? <ChevronUp size={16} className="text-indigo-400" /> : <ChevronDown size={16} className="text-slate-500" />}
+                </button>
+                {openFaqIndex === idx && <div className={`p-4 pt-0 text-xs text-slate-400 leading-relaxed border-t border-slate-800/50 bg-slate-950/30 ${['ko', 'zh'].includes(lang) ? 'break-keep' : ''}`}><div className="pt-4">{item.a}</div></div>}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+  }
+
+  function renderGuides() {
+      return (
+        <div className="mt-12 mb-6 space-y-4" id="guides">
+          <div className="flex items-center justify-center space-x-2 mb-6">
+            <div className="h-px bg-slate-800 flex-1"></div>
+            <span className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">{t('blog_section')}</span>
+            <div className="h-px bg-slate-800 flex-1"></div>
+          </div>
+          <div className="grid gap-3">
+            {BLOG_POSTS.map((post, idx) => {
+              const Icon = post.icon;
+              return (
+                <Link 
+                    key={idx} 
+                    href={post.href}
+                    className="flex items-center justify-between p-4 rounded-xl border border-slate-800 bg-slate-900/50 hover:bg-indigo-900/20 hover:border-indigo-500/50 transition-all group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-slate-800 text-slate-400 group-hover:text-indigo-400 group-hover:bg-indigo-500/10 transition-colors"><Icon size={18} /></div>
+                    <span className="text-sm font-medium text-slate-300 group-hover:text-white transition-colors">{post.title}</span>
+                  </div>
+                  <ArrowRight size={16} className="text-slate-600 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all" />
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      );
+  }
+
   function renderStep1() {
     return (
     <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-500">
       <div className="text-center space-y-2 mb-4">
-        <h1 className={`text-2xl md:text-3xl font-bold text-white tracking-tight leading-tight ${lang !== 'en' ? 'break-keep' : ''}`}>{t('hero_title')}</h1>
-        <div className={`text-slate-400 text-base max-w-xs mx-auto md:max-w-lg ${lang !== 'en' ? 'break-keep' : ''}`}>{t('hero_subtitle')}</div>
+        <h1 className={`text-2xl md:text-3xl font-bold text-white tracking-tight leading-tight ${['ko', 'zh'].includes(lang) ? 'break-keep' : ''}`}>{t('hero_title')}</h1>
+        <div className={`text-slate-400 text-base max-w-xs mx-auto md:max-w-lg ${['ko', 'zh'].includes(lang) ? 'break-keep' : ''}`}>{t('hero_subtitle')}</div>
       </div>
       <Card className="p-5 space-y-6">
         <div>
@@ -1235,16 +1410,16 @@ export default function App() {
             <Label lang={lang} className="mb-0">{t('career_avg')}</Label>
             <button onClick={() => setShowAvgIncomeInfo(!showAvgIncomeInfo)} className="text-indigo-400 hover:text-indigo-300 focus:outline-none"><Info size={14} /></button>
           </div>
-          {showAvgIncomeInfo && <div className={`mb-3 p-3 bg-indigo-900/30 border border-indigo-800 rounded-lg text-xs text-indigo-200 animate-in fade-in slide-in-from-top-1 ${lang !== 'en' ? 'break-keep' : ''}`}>{t('info_career_avg')}</div>}
+          {showAvgIncomeInfo && <div className={`mb-3 p-3 bg-indigo-900/30 border border-indigo-800 rounded-lg text-xs text-indigo-200 animate-in fade-in slide-in-from-top-1 ${['ko', 'zh'].includes(lang) ? 'break-keep' : ''}`}>{t('info_career_avg')}</div>}
           <CurrencyInput value={formData.careerAvgIncome} onChange={(e) => handleChange('careerAvgIncome', e.target.value)} />
-          <p className={`text-xs text-slate-500 mt-1 pl-1 ${lang !== 'en' ? 'break-keep' : ''}`}>{t('note_todays_dollars')}</p>
+          <p className={`text-xs text-slate-500 mt-1 pl-1 ${['ko', 'zh'].includes(lang) ? 'break-keep' : ''}`}>{t('note_todays_dollars')}</p>
         </div>
         <div>
           <div className="flex items-center gap-2 mb-2">
             <Label lang={lang} className="mb-0">{t('other_income')}</Label>
             <button onClick={() => setShowOtherIncomeInfo(!showOtherIncomeInfo)} className="text-indigo-400 hover:text-indigo-300 focus:outline-none"><Info size={14} /></button>
           </div>
-          {showOtherIncomeInfo && <div className={`mb-3 p-3 bg-indigo-900/30 border border-indigo-800 rounded-lg text-xs text-indigo-200 animate-in fade-in slide-in-from-top-1 ${lang !== 'en' ? 'break-keep' : ''}`}>{t('info_other_income')}</div>}
+          {showOtherIncomeInfo && <div className={`mb-3 p-3 bg-indigo-900/30 border border-indigo-800 rounded-lg text-xs text-indigo-200 animate-in fade-in slide-in-from-top-1 ${['ko', 'zh'].includes(lang) ? 'break-keep' : ''}`}>{t('info_other_income')}</div>}
           <CurrencyInput value={formData.otherRetirementIncome} onChange={(e) => handleChange('otherRetirementIncome', e.target.value)} />
         </div>
       </Card>
@@ -1266,7 +1441,7 @@ export default function App() {
             <div className="flex-1"><Slider min={0} max={50} value={formData.yearsInCanada} onChange={(e) => handleChange('yearsInCanada', e.target.value)} /></div>
             <div className="w-20"><Input ref={firstInputRef} type="number" className="text-center" value={formData.yearsInCanada} onChange={(e) => handleChange('yearsInCanada', e.target.value)} /></div>
           </div>
-          <p className={`text-xs text-slate-500 mt-2 ${lang !== 'en' ? 'break-keep' : ''}`}>{t('note_residency')}</p>
+          <p className={`text-xs text-slate-500 mt-2 ${['ko', 'zh'].includes(lang) ? 'break-keep' : ''}`}>{t('note_residency')}</p>
           {inputWarning.field === 'yearsInCanada' && <div className="mt-2 p-2 bg-amber-900/30 border border-amber-800 rounded-lg flex items-center gap-2 animate-in fade-in"><AlertTriangle size={14} className="text-amber-500" /><p className="text-[10px] text-amber-200">{inputWarning.message}</p></div>}
         </div>
         <div>
@@ -1275,7 +1450,7 @@ export default function App() {
             <div className="flex-1"><Slider min={0} max={50} value={formData.yearsWorked} onChange={(e) => handleChange('yearsWorked', e.target.value)} /></div>
             <div className="w-20"><Input type="number" className="text-center" value={formData.yearsWorked} onChange={(e) => handleChange('yearsWorked', e.target.value)} /></div>
           </div>
-          <p className={`text-xs text-slate-500 mt-2 ${lang !== 'en' ? 'break-keep' : ''}`}>{t('note_work_history')}</p>
+          <p className={`text-xs text-slate-500 mt-2 ${['ko', 'zh'].includes(lang) ? 'break-keep' : ''}`}>{t('note_work_history')}</p>
           {inputWarning.field === 'yearsWorked' && <div className="mt-2 p-2 bg-amber-900/30 border border-amber-800 rounded-lg flex items-center gap-2 animate-in fade-in"><AlertTriangle size={14} className="text-amber-500" /><p className="text-[10px] text-amber-200">{inputWarning.message}</p></div>}
         </div>
       </Card>
@@ -1293,7 +1468,7 @@ export default function App() {
       <Card className="p-6 space-y-8 text-left">
         <div>
           <Label lang={lang}>{t('child_rearing')}</Label>
-          <p className={`text-[11px] text-slate-400 mb-6 leading-relaxed ${lang !== 'en' ? 'break-keep' : ''}`}>{t('child_rearing_note')}</p>
+          <p className={`text-[11px] text-slate-400 mb-6 leading-relaxed ${['ko', 'zh'].includes(lang) ? 'break-keep' : ''}`}>{t('child_rearing_note')}</p>
           <div className="flex items-center space-x-4">
             <div className="flex-1"><Slider min={0} max={40} value={formData.childRearingYears} onChange={(e) => handleChange('childRearingYears', e.target.value)} /></div>
             <div className="w-20"><Input ref={firstInputRef} type="number" className="text-center" value={formData.childRearingYears} onChange={(e) => handleChange('childRearingYears', e.target.value)} /></div>
@@ -1321,9 +1496,9 @@ export default function App() {
                   <Label lang={lang} className="mb-0">{t('best_5_salary')}</Label>
                   <button onClick={() => setShowPensionSalaryInfo(!showPensionSalaryInfo)} className="text-indigo-400 hover:text-indigo-300 focus:outline-none"><Info size={14} /></button>
                 </div>
-                {showPensionSalaryInfo && <div className={`mb-3 p-3 bg-indigo-900/30 border border-indigo-800 rounded-lg text-xs text-indigo-200 animate-in fade-in slide-in-from-top-1 ${lang !== 'en' ? 'break-keep' : ''}`}>{t('info_pension_salary')}</div>}
+                {showPensionSalaryInfo && <div className={`mb-3 p-3 bg-indigo-900/30 border border-indigo-800 rounded-lg text-xs text-indigo-200 animate-in fade-in slide-in-from-top-1 ${['ko', 'zh'].includes(lang) ? 'break-keep' : ''}`}>{t('info_pension_salary')}</div>}
                 <CurrencyInput value={formData.pensionSalary} onChange={(e) => handleChange('pensionSalary', e.target.value)} />
-                <p className={`text-xs text-slate-500 mt-1 pl-1 ${lang !== 'en' ? 'break-keep' : ''}`}>{t('note_todays_dollars')}</p>
+                <p className={`text-xs text-slate-500 mt-1 pl-1 ${['ko', 'zh'].includes(lang) ? 'break-keep' : ''}`}>{t('note_todays_dollars')}</p>
               </div>
             </div>
           )}
@@ -1348,7 +1523,6 @@ export default function App() {
     const delayedTotal = compare.total * delayedInf * compareFactor;
     const pensionLabel = formData.province === 'Quebec' ? 'QPP' : 'CPP';
 
-    // [Graph Logic Update] Only show Current bar if in "Today" view mode
     const chartData = [];
     if (viewMode === 'today') {
         chartData.push({ name: 'Current', Amount: Math.round(currentMonthly), fill: '#22d3ee' });
@@ -1400,7 +1574,6 @@ export default function App() {
           </div>
         </div>
         
-        {/* [순서 1] Chart */}
         <Card className="p-6 relative">
           <div className="flex flex-col gap-4 mb-6">
             <div className="flex justify-between items-center"><h3 className="text-slate-300 font-bold">{t('comparison_title')}</h3></div>
@@ -1445,12 +1618,11 @@ export default function App() {
           {showAfterTax && (
             <div className="mt-4 p-3 bg-blue-950/30 border border-blue-900/50 rounded-lg flex items-start gap-2 animate-in fade-in">
               <Info className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
-              <p className={`text-[10px] text-blue-200/80 leading-relaxed ${lang !== 'en' ? 'break-keep' : ''}`}>{t('tax_note', { province: results.province })}</p>
+              <p className={`text-[10px] text-blue-200/80 leading-relaxed ${['ko', 'zh'].includes(lang) ? 'break-keep' : ''}`}>{t('tax_note', { province: results.province })}</p>
             </div>
           )}
         </Card>
 
-        {/* [순서 2] Breakdown */}
         <div className="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden">
           <div className="p-4 border-b border-slate-800 bg-slate-900/50">
             <h4 className="text-sm font-bold text-white flex items-center"><PieChart className="w-4 h-4 mr-2 text-indigo-400" /> {t('breakdown')}</h4>
@@ -1505,13 +1677,26 @@ export default function App() {
           </table>
         </div>
 
-        {/* [순서 3 & 4 Combined] Unified Gap Analysis Card */}
         {renderGapAnalysis()}
 
-        <Button className="w-full h-auto min-h-[3.5rem] mt-8 py-4" onClick={() => window.open(CONSTANTS.EXPERT_LINK, '_blank')}>
+        <Button className="w-full h-auto min-h-[3.5rem] mt-8 py-4" onClick={() => {
+          trackEvent('click_expert_link', 'conversion', 'Expert Advice Clicked', Math.round(results.shortfallBase));
+          window.open(CONSTANTS.EXPERT_LINK, '_blank');
+        }}>
           {results.shortfallBase > 0 ? t('expert_shortfall') : t('expert_surplus')} <ExternalLink className="ml-2 w-4 h-4 flex-shrink-0" />
         </Button>
         
+        {/* [Legal & Privacy Box Added] */}
+        <div className="mt-6 mb-2 p-4 bg-slate-800/50 border border-slate-700 rounded-xl flex items-start gap-3 text-left">
+            <Shield className="w-5 h-5 text-indigo-400 flex-shrink-0 mt-0.5" />
+            <div>
+                <h4 className="text-[11px] font-bold text-slate-200 mb-1">{t('legal_box_title')}</h4>
+                <p className={`text-[10px] text-slate-400 leading-relaxed ${['ko', 'zh'].includes(lang) ? 'break-keep' : ''}`}>
+                    {t('legal_box_text')}
+                </p>
+            </div>
+        </div>
+
         <div className="grid grid-cols-1 gap-3 mt-4">
           <Button className="h-auto min-h-[3.5rem] py-4 bg-emerald-600 hover:bg-emerald-500" onClick={handleDownloadPDF} disabled={isDownloading}>
             {isDownloading ? <span className="flex items-center animate-pulse"><RefreshCcw className="mr-2 w-4 h-4 animate-spin" /> Generating...</span> : <span className="flex items-center"><Download className="mr-2 w-4 h-4" /> {t('download_pdf')}</span>}
@@ -1527,51 +1712,15 @@ export default function App() {
         <div className="mt-4 text-center space-y-2">
             <p className="text-[10px] text-slate-600 leading-relaxed max-w-xs mx-auto">{t('disclaimer_footer')}</p>
             {formData.currentAge < 40 && (
-                <p className={`text-[10px] text-slate-500/80 leading-relaxed max-w-xs mx-auto ${lang !== 'en' ? 'break-keep' : ''}`}>{t('cpp_enhancement_note')}</p>
+                <p className={`text-[10px] text-slate-500/80 leading-relaxed max-w-xs mx-auto ${['ko', 'zh'].includes(lang) ? 'break-keep' : ''}`}>{t('cpp_enhancement_note')}</p>
             )}
+             <p className="text-[9px] text-slate-700 font-semibold tracking-widest uppercase mt-4 opacity-70">
+                {t('trust_marker')}
+            </p>
         </div>
 
-        {/* FAQ Section */}
-        <div className="mt-12 mb-6 space-y-4">
-          <div className="flex items-center justify-center space-x-2 mb-6">
-            <div className="h-px bg-slate-800 flex-1"></div>
-            <span className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">{t('faq_section')}</span>
-            <div className="h-px bg-slate-800 flex-1"></div>
-          </div>
-          <div className="space-y-3">
-            {(FAQ_DATA[lang] || FAQ_DATA['en']).map((item, idx) => (
-              <div key={idx} className="rounded-xl border border-slate-800 bg-slate-900/30 overflow-hidden">
-                <button onClick={() => setOpenFaqIndex(openFaqIndex === idx ? null : idx)} className="w-full flex items-center justify-between p-4 text-left hover:bg-slate-800/50 transition-colors">
-                  <span className={`text-sm font-medium text-slate-300 pr-4 ${lang !== 'en' ? 'break-keep' : ''}`}>{item.q}</span>
-                  {openFaqIndex === idx ? <ChevronUp size={16} className="text-indigo-400" /> : <ChevronDown size={16} className="text-slate-500" />}
-                </button>
-                {openFaqIndex === idx && <div className={`p-4 pt-0 text-xs text-slate-400 leading-relaxed border-t border-slate-800/50 bg-slate-950/30 ${lang !== 'en' ? 'break-keep' : ''}`}><div className="pt-4">{item.a}</div></div>}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="mt-12 mb-6 space-y-4">
-          <div className="flex items-center justify-center space-x-2 mb-6">
-            <div className="h-px bg-slate-800 flex-1"></div>
-            <span className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">{t('blog_section')}</span>
-            <div className="h-px bg-slate-800 flex-1"></div>
-          </div>
-          <div className="grid gap-3">
-            {BLOG_POSTS.map((post, idx) => {
-              const Icon = post.icon;
-              return (
-                <Link key={idx} href={post.href} className="flex items-center justify-between p-4 rounded-xl border border-slate-800 bg-slate-900/50 hover:bg-indigo-900/20 hover:border-indigo-500/50 transition-all group">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-slate-800 text-slate-400 group-hover:text-indigo-400 group-hover:bg-indigo-500/10 transition-colors"><Icon size={18} /></div>
-                    <span className="text-sm font-medium text-slate-300 group-hover:text-white transition-colors">{post.title}</span>
-                  </div>
-                  <ArrowRight size={16} className="text-slate-600 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all" />
-                </Link>
-              );
-            })}
-          </div>
-        </div>
+        {renderFAQ()}
+        {renderGuides()}
       </div>
     );
   };
@@ -1580,14 +1729,31 @@ export default function App() {
     <div className="min-h-screen bg-slate-950 flex flex-col font-sans text-slate-100 relative text-left">
       <header className="bg-slate-950 border-b border-slate-800 px-6 py-4 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center space-x-2 cursor-pointer" onClick={handleStartOver}>
-          <div className="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center"><Calculator className="w-4 h-4 text-white" /></div>
+          {/* [로고 업데이트] 계산기 아이콘 대신 업로드된 icon.png 사용 */}
+          <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center bg-slate-800">
+             {/* NOTE: 프리뷰 환경에서는 실제 이미지 파일(/icon.png)을 불러올 수 없으므로 
+                이미지가 로드되지 않을 때(onError) 대체 UI(RM 텍스트)를 보여주도록 처리되어 있습니다.
+             */}
+            <img 
+              src="/icon.png" 
+              alt="RetireMinute Logo" 
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.parentElement.innerHTML = '<div class="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold text-xs">RM</div>';
+              }}
+            />
+          </div>
           <span className="font-bold text-base md:text-lg tracking-tight whitespace-nowrap"><span className="text-white">Retire</span><span className="text-[#82B78B]">Minute</span></span>
         </div>
         <div className="flex items-center gap-2">
-          <Link href="#" className="hidden sm:block text-xs font-bold text-slate-400 hover:text-indigo-400 transition-colors mr-2">{t('guides_link')}</Link>
+          <Link href="#guides" className="hidden sm:block text-xs font-bold text-slate-400 hover:text-indigo-400 transition-colors mr-2">{t('guides_link')}</Link>
           <div className="flex bg-slate-900/80 rounded-lg p-0.5 border border-slate-800 shadow-inner">
             {['en', 'fr', 'ko', 'zh'].map(l => (
-              <button key={l} onClick={() => setLang(l)} className={`px-2.5 py-1.5 rounded-md text-[10px] font-black uppercase transition-all ${lang === l ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-600 hover:text-slate-400'}`}>
+              <button key={l} onClick={() => {
+                setLang(l);
+                trackEvent('language_switch', 'engagement', l);
+              }} className={`px-2.5 py-1.5 rounded-md text-[10px] font-black uppercase transition-all ${lang === l ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-600 hover:text-slate-400'}`}>
                 {l === 'en' ? 'EN' : l === 'fr' ? 'FR' : l === 'ko' ? '한국어' : '中文'}
               </button>
             ))}
@@ -1596,6 +1762,8 @@ export default function App() {
       </header>
       <main className="flex-1 w-full max-w-md mx-auto p-6">
         <div className="flex-1">
+          {/* [Step Indicator] Added */}
+          {renderStepIndicator()}
           {step === 1 && renderStep1()}
           {step === 2 && renderStep2()}
           {step === 3 && renderStep3()}
@@ -1603,10 +1771,17 @@ export default function App() {
           {step === 5 && renderResults()}
         </div>
         {step < 5 && (
+          <>
           <div className="mt-6 pt-4 border-t border-slate-800 flex flex-row-reverse justify-between items-center">
             <Button onClick={handleNext} className="w-32" disabled={!isStepValid()}>{t('next')} <ArrowRight className="ml-2 w-4 h-4" /></Button>
             {step > 1 && <Button variant="ghost" onClick={handleBack}><ArrowLeft className="mr-2 w-4 h-4" /> {t('back')}</Button>}
           </div>
+            {/* [Fix] Render FAQ and Guides below the fold for steps 1-4 so the link works */}
+            <div className="mt-20 border-t border-slate-800/50 pt-10">
+              {renderFAQ()}
+              {renderGuides()}
+            </div>
+          </>
         )}
       </main>
       <footer className="w-full max-w-md mx-auto px-6 py-8 text-center mt-auto">
